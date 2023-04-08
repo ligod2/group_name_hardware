@@ -1,0 +1,51 @@
+{
+  "name": "例程3-串口通信",
+  "type": "C51",
+  "dependenceList": [],
+  "srcDirs": [
+    "src",
+    "lib"
+  ],
+  "outDir": "build",
+  "virtualFolder": {
+    "name": "<virtual_root>",
+    "files": [],
+    "folders": []
+  },
+  "miscInfo": {
+    "uid": "0151dd574ff6f15d7d7a6732205e925a"
+  },
+  "targets": {
+    "Release": {
+      "excludeList": [],
+      "toolchain": "Keil_C51",
+      "compileConfig": {
+        "options": "null"
+      },
+      "uploader": "stcgal",
+      "uploadConfig": {
+        "bin": "",
+        "eepromImgPath": "null",
+        "extraOptions": "",
+        "options": ".eide/stc.flash.json"
+      },
+      "uploadConfigMap": {
+        "Custom": {
+          "bin": "",
+          "commandLine": "python ./tools/stcflash.py -p ${port} \"${hexFile}\"",
+          "eraseChipCommand": ""
+        }
+      },
+      "custom_dep": {
+        "name": "default",
+        "incList": [],
+        "libList": [],
+        "sourceDirList": [],
+        "defineList": []
+      }
+    }
+  },
+  "version": "3.3",
+  "deviceName": null,
+  "packDir": null
+}
