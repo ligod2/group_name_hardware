@@ -11,4 +11,6 @@ void uart1_send(unsigned char *str ,unsigned char len);
 void uart2_sendByte(unsigned char dat);
 void uart2_sendStr(unsigned char *str);
 
+void uart2_clearBuf();
+
 #endif // !MYUART_H

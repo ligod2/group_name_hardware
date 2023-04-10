@@ -27,6 +27,7 @@ void main(void)
 
     esp8266_init();
     esp8266_wifi();
+    mqtt_init();
     while (1) {
         on_receive_handle();
     }

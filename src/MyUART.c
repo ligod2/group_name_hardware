@@ -79,6 +79,11 @@ void uart2_sendStr(unsigned char *str)
     IE2 = 0x01;
 }
 
+void uart2_clearBuf(){
+    memset(RX_buffer, 0, BUF_LENTH); // 清缓存数据
+    RX_num = 0;                      // 接收计数变量清0
+}
+
 /////////////////////////////////
 /////////////////////////////////
 

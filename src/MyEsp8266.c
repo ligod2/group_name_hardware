@@ -1,5 +1,6 @@
 #include "MyEsp8266.h"
 
+// 本地联网设置
 unsigned char code esp_at[]        = "AT\r\n";                  // 握手连接指令，返回"OK"
 unsigned char code esp_cwmode[]    = "AT+CWMODE=3\r\n";         // 设置ESP8266的工作模式3 AP+Station，返回"OK"或者"no change"
 unsigned char code esp_cifsr[]     = "AT+CIFSR\r\n";            // 本机IP地址查询指令
@@ -8,6 +9,11 @@ unsigned char code esp_test[]      = "sunny\r\n";               // 数据内容
 unsigned char code esp_cipserver[] = "AT+CIPSERVER=1,5000\r\n"; // 建立TCP服务器，开放端口5000
 unsigned char code esp_cipmux[]    = "AT+CIPMUX=1\r\n";         // 打开多连接
 unsigned char code esp_rst[]       = "AT+RST\r\n";              // 软件复位
+// MQTT服务器联网设置
+unsigned char code mqtt_user[]         = "AT+MQTTUSERCFG=0,1,\"bm565bai4RLi\",\"username\",\"123\",0,0,\"\"\r\n";
+unsigned char code mqtt_connect[]      = "AT+MQTTCONN=0,\"broker-cn.emqx.io\",1883,0\r\n";
+unsigned char code mqtt_subscription[] = "AT+MQTTSUB=0,\"2913064141\",0\r\n";
+unsigned char code mqtt_send[]         = "AT+MQTTPUB=0,\"2913064141\",\"hello\",1,0\r\n";
 
 // 指定字符串与缓存数组数据进行数据比较
 //*p 要比较的指定字符串指针数据
@@ -16,8 +22,7 @@ char is_containStr(unsigned char *p)
 {
     if (strstr(RX_buffer, p) != NULL) {
         return 1;
-    }
-    else{
+    } else {
         return 0;
     }
 }
@@ -90,6 +95,61 @@ void esp8266_wifi()
     uart1_sendStr(RX_buffer);
     memset(RX_buffer, 0, BUF_LENTH); // 清缓存数据
     RX_num = 0;                      // 接收计数变量清0
+}
+
+void mqtt_init()
+{
+    // 设置MQTT账号
+    while (1) {
+        uart2_sendStr(mqtt_user); // 串口2查询wifi模块 当前ip地址
+        if (is_containStr("OK"))
+            break;
+        else
+            uart1_sendStr("ERROR5,some problems with MQTT11111 \r\n");
+        delay_ms(3000);
+    }
+    uart1_sendStr(RX_buffer);
+    memset(RX_buffer, 0, BUF_LENTH); // 清缓存数据
+    RX_num = 0;                      // 接收计数变量清0
+
+    while (1) {
+        uart2_sendStr(mqtt_connect);
+        if (is_containStr("OK") || is_containStr("+MQTTCONNECTED") || is_containStr("SUBRECV"))
+            break;
+        else
+            uart1_sendStr("ERROR5,some problems with MQTT222222 \r\n");
+        delay_ms(10000);
+        uart1_sendStr(RX_buffer);
+    }
+    uart1_sendStr(RX_buffer);
+    memset(RX_buffer, 0, BUF_LENTH); // 清缓存数据
+    RX_num = 0;                      // 接收计数变量清0
+
+    while (1) {
+        uart2_sendStr(mqtt_subscription);
+        if (is_containStr("OK") || is_containStr("ogv") || is_containStr("SUBRECV"))
+            break;
+        else
+            uart1_sendStr("ERROR5,some problems with MQTT \r\n");
+        delay_ms(600);
+    }
+    uart1_sendStr(RX_buffer);
+    memset(RX_buffer, 0, BUF_LENTH); // 清缓存数据
+    RX_num = 0;                      // 接收计数变量清0
+
+    while (1) {
+        uart2_sendStr(mqtt_send);
+        if (is_containStr("OK") )
+            break;
+        else
+            uart1_sendStr("ERROR5,some problems with MQTT \r\n");
+        delay_ms(600);
+    }
+    uart1_sendStr(RX_buffer);
+    memset(RX_buffer, 0, BUF_LENTH); // 清缓存数据
+    RX_num = 0;                      // 接收计数变量清0
+
+    P40 = 0;
 }
 
 void on_receive_handle()
