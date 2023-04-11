@@ -3,6 +3,8 @@
 #define S2RI  0x01              //S2CON.0
 #define S2TI  0x02              //S2CON.1
 unsigned char xdata RX_buffer[BUF_LENTH];
+unsigned int RX_num = 0; // 接收计数变量
+
 
 
 void uart_init()
@@ -87,7 +89,6 @@ void uart2_clearBuf(){
 /////////////////////////////////
 /////////////////////////////////
 
-unsigned int RX_num = 0; // 接收计数变量
 
 // 串口1中断
 void Uart1() interrupt 4 using 1

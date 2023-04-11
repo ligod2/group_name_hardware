@@ -22,12 +22,13 @@ ESP8266设置为AP+Station模式 server服务器模式 并产生一个wifi热点
 
 void main(void)
 {
+    P50 = 0;
     delay_init();
     uart_init(); // 调用串口初始化函数
 
     esp8266_init();
     esp8266_wifi();
-    mqtt_init();
+    esp8266_mqtt_init();
     while (1) {
         on_receive_handle();
     }
