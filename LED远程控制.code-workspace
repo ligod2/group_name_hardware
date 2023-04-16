@@ -23,7 +23,10 @@
             "*.cxx": "cpp",
             "*.cc": "cpp",
             "STRING.H": "cpp",
-            "STDIO.H": "cpp"
+            "STDIO.H": "cpp",
+            "REG51.H": "cpp",
+            "INTRINS.H": "cpp",
+            "STDLIB.H": "cpp"
         },
         "C_Cpp.default.configurationProvider": "cl.eide",
         "[yaml]": {

@@ -82,7 +82,7 @@ void uart2_sendStr(unsigned char *str)
 }
 
 void uart2_clearBuf(){
-    memset(RX_buffer, 0, BUF_LENTH); // 清缓存数据
+    memset(RX_buffer, '\0', BUF_LENTH); // 清缓存数据
     RX_num = 0;                      // 接收计数变量清0
 }
 
@@ -91,7 +91,7 @@ void uart2_clearBuf(){
 
 
 // 串口1中断
-void Uart1() interrupt 4 using 1
+void Uart1() interrupt 4
 {
     ES = 0; // 关闭串口1中断
     if (RI) {
@@ -107,7 +107,7 @@ void Uart1() interrupt 4 using 1
 }
 
 // 串口2中断
-void Uart2() interrupt 8 using 1
+void Uart2() interrupt 8
 {
 
     IE2 = 0x00; // 关闭串口2中断
@@ -122,3 +122,4 @@ void Uart2() interrupt 8 using 1
     }
     IE2 = 0x01; // 开启串口2中断
 }
+
