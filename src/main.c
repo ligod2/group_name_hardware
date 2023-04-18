@@ -53,82 +53,51 @@ void main(void)
     threshold = IapReadByte(IAP_ADDRESS);   // 获取持久化在扇区1的第一个字节作为光敏的阈值
     memset(format_buffer, '\0', BUF_LENTH); // 清缓存数据,作为格式化后字符串的存储位置
     sprintf(format_buffer, "threshold==[%s]", char_to_string(threshold));
-    esp8266_mqtt_sendStr("led/client", format_buffer);
+    esp8266_mqtt_public_remain("led/cpu", format_buffer);
     uart1_sendStr(format_buffer);
 
     while (1) {
-        if (model == 0) {
-            // 自动模式（根据ADC值和阈值自动判断是否开灯）
-            if (adc >= threshold) {
-                // 太暗,开灯
-                is_open = 1;
-                P40     = 0;
-            } else {
-                // 太亮，关灯
-                is_open = 0;
-                P40     = 1;
-            }
-
-        } else {
-            // 手动模式（根据远程发来的灯控信号开关灯）
-            if (is_open) {
-                P40 = 0;
-            } else {
-                P40 = 1;
-            }
-        }
-
-        // 根据接收到的信息更新各个标志位，以供上述判断
-        if (is_containStr("LEDK")) // 收到手动模式下的开灯命令
+        ES  = 0;
+        IE2 = 0x00;
+        // 根据接收到的信息更新各个标志位
+        if (strstr(RX_buffer, "LEDK") != NULL) // 收到手动模式下的开灯命令
         {
-            ES  = 0;
-            IE2 = 0x00;
-
             is_open = 1; // 点亮led
             uart2_clearBuf();
             uart1_sendStr("led is open!\r\n");
 
-            ES  = 1;
-            IE2 = 0x01;
-        } else if (is_containStr("LEDG")) // 收到手动模式下的关灯命令
+        } else if (strstr(RX_buffer, "LEDG") != NULL) // 收到手动模式下的关灯命令
         {
-            ES  = 0;
-            IE2 = 0x00;
-
             is_open = 0; // 熄灭led
             uart2_clearBuf();
             uart1_sendStr("led is close!\r\n");
 
-            ES  = 1;
-            IE2 = 0x01;
-        } else if (is_containStr("threshold")) // 收到改变阈值的命令
+        } else if (strstr(RX_buffer, "threshold") != NULL) // 收到改变阈值的命令
         {
-            ES  = 0;
-            IE2 = 0x00;
-
             // 清空格式化缓冲区
             memset(format_buffer, '\0', FROMAT_BUF_LENTH);
             // 获取threshold的数值
             threshold = getByteFromStr(strstr(RX_buffer, "threshold"));
-            uart1_sendStr("---");
-            uart1_sendByte(threshold);
-            uart1_sendStr("---");
             // 持久化阈值
             IapEraseSector(IAP_ADDRESS);
             IapProgramByte(IAP_ADDRESS, threshold);
+            
+            // memset(format_buffer, '\0', BUF_LENTH); // 清缓存数据,作为格式化后字符串的存储位置
+            // sprintf(format_buffer, "threshold==[%s]", char_to_string(threshold));
+            // esp8266_mqtt_public_remain("led/cpu", format_buffer);
+            // uart1_sendStr(format_buffer);
             // 重置接收区
             uart2_clearBuf();
+            memset(format_buffer, '\0', BUF_LENTH); // 清缓存数据,作为格式化后字符串的存储位置
+            sprintf(format_buffer, "threshold==[%s]", char_to_string(threshold));
+            esp8266_mqtt_public_remain("led/cpu", format_buffer);
+            uart1_sendStr(format_buffer);
 
-            ES  = 1;
-            IE2 = 0x01;
-        } else if (is_containStr("model")) // 收到更改控制模式的命令
+        } else if (strstr(RX_buffer, "model") != NULL) // 收到更改控制模式的命令
         {
-            ES  = 0;
-            IE2 = 0x00;
-
             // 清空格式化缓冲区
             memset(format_buffer, '\0', FROMAT_BUF_LENTH);
-            // 获取threshold的数值
+            // 获取model的数值
             model = getByteFromStr(strstr(RX_buffer, "model"));
             // 重置接收区
             uart2_clearBuf();
@@ -139,26 +108,43 @@ void main(void)
                 P50 = 1;
                 uart1_sendStr("setModel: automatic mode\r\n");
             }
+        }
+        ES  = 1;
+        IE2 = 0x01;
 
-            ES  = 1;
-            IE2 = 0x01;
+        if (model == 0) {
+            // 自动模式（根据ADC值和阈值自动判断是否开灯）
+            if (adc >= threshold) {
+                // 太暗,开灯
+                P40 = 0;
+            } else {
+                // 太亮，关灯
+                P40 = 1;
+            }
+        } else {
+            // 手动模式（根据远程发来的灯控信号开关灯）
+            if (is_open) {
+                P40 = 0;
+            } else {
+                P40 = 1;
+            }
         }
 
         // 持续发送ADC值，向前端提供光线变化的数据
         adc = GetADCResult(0);
         memset(format_buffer, '\0', BUF_LENTH); // 清缓存数据
         sprintf(format_buffer, "adc==[%s]", char_to_string(adc));
-        esp8266_mqtt_sendStr("led/data", format_buffer);
+        esp8266_mqtt_sendStr("led/cpu", format_buffer);
 
-        memset(format_buffer, '\0', BUF_LENTH); // 清缓存数据,作为格式化后字符串的存储位置
-        sprintf(format_buffer, "threshold==[%s]", char_to_string(threshold));
-        esp8266_mqtt_sendStr("led/client", format_buffer);
+        // memset(format_buffer, '\0', BUF_LENTH); // 清缓存数据,作为格式化后字符串的存储位置
+        // sprintf(format_buffer, "threshold==[%s]", char_to_string(threshold));
+        // esp8266_mqtt_sendStr("led/cpu", format_buffer);
 
-        if (is_open) {
-            esp8266_mqtt_sendStr("led/controller", "LEDK");
-        } else {
-            esp8266_mqtt_sendStr("led/controller", "LEDG");
-        }
+        // if (is_open) {
+        //     esp8266_mqtt_sendStr("led/cpu", "LEDK");
+        // } else {
+        //     esp8266_mqtt_sendStr("led/cpu", "LEDG");
+        // }
 
         delay_ms(500);
     }

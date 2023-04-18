@@ -11,9 +11,9 @@ unsigned char code esp_cipmux[]    = "AT+CIPMUX=1\r\n";         // 打开多连接
 unsigned char code esp_rst[]       = "AT+RST\r\n";              // 软件复位
 // MQTT服务器联网设置
 unsigned char code mqtt_user[] = "AT+MQTTUSERCFG=0,1,\"bm565bai4RLi\",\"mcpu\",\"123\",0,1,\"\"\r\n";
-// unsigned char code mqtt_connect[]      = "AT+MQTTCONN=0,\"broker-cn.emqx.io\",1883,0\r\n";
-unsigned char code mqtt_connect[]      = "AT+MQTTCONN=0,\"192.168.43.226\",1883,0\r\n";
-unsigned char code mqtt_send[]         = "AT+MQTTPUB=0,\"led\/client\",\"led_sign\",1,0\r\n";
+unsigned char code mqtt_connect[]      = "AT+MQTTCONN=0,\"broker-cn.emqx.io\",1883,0\r\n";
+// unsigned char code mqtt_connect[] = "AT+MQTTCONN=0,\"192.168.43.226\",1883,0\r\n";
+unsigned char code mqtt_send[]    = "AT+MQTTPUB=0,\"led\/cpu\",\"led_sign\",2,0\r\n";
 
 // 指定字符串与缓存数组数据进行数据比较
 //*p 要比较的指定字符串指针数据
@@ -31,14 +31,27 @@ void esp8266_init()
 {
     // 发送AT 进行握手
     while (1) {
-        uart2_sendStr(esp_at); // 串口2对wifi模块发送握手指令 即AT
-        delay_ms(600);
-        if (strstr(RX_buffer, "OK") != NULL) {
+        uart2_sendStr("AT+RST\r\n"); // esp8266重启
+        delay_ms(1000);
+        if (strstr(RX_buffer, "OK") != NULL || strstr(RX_buffer, "ready")) {
             uart1_sendStr("OK,mcu connection success with ESP8266! \r\n");
+            if (strstr(RX_buffer,"CONNECTED") == NULL) {
+                // 连接WIFI
+                while (1) {
+                    uart2_sendStr("AT+CWJAP=\"aaaaaa\",\"11111111\"\r\n");
+                    delay_ms(3000);
+                    if (is_containStr("OK") || is_containStr("CONNECTED")) {
+                        break;
+                    } else {
+                        uart1_sendStr("ERROR,wifi is not connected! \r\n");
+                    }
+                }
+            }
+            uart1_sendStr("OK,wifi is connected! \r\n");
             uart2_clearBuf();
             break;
         } else {
-            uart1_sendStr("waiting for esp8266 to start... \r\n");
+            uart1_sendStr("ERROR,waiting for esp8266 to start... \r\n");
         }
     }
 }
@@ -96,38 +109,25 @@ void esp8266_wifi()
 
 void esp8266_mqtt_init()
 {
-    // 断开已有的MQTT连接，否则设置账号和服务连接会出错
-    uart2_sendStr("AT+MQTTCLEAN=0\r\n"); // 串口2对wifi模块发送握手指令 即AT
-    delay_ms(1000);
-    uart2_clearBuf();
-    // 设置MQTT账号
     while (1) {
-        uart2_sendStr(mqtt_user); // 串口2对wifi模块发送握手指令 即AT
-        delay_ms(600);
-        if (strstr(RX_buffer, "OK") != NULL) {
-            uart1_sendStr("OK,the mqtt account information is set successfully! \r\n");
-            break;
-        } else {
-            uart1_sendStr("network not connected! \r\n");
-            uart1_sendStr(RX_buffer);
-            uart1_sendStr("\r\n");
-        }
-        uart2_clearBuf();
-    }
-    // MQTT服务器连接(第一次返回OK，多次连接错误)
-    uart2_sendStr(mqtt_connect);
-    delay_ms(1000);
-    uart1_sendStr("connect to the mqtt server... \r\n");
-    uart2_clearBuf();
+        // 断开已有的MQTT连接，否则设置账号和服务连接会出错
+        // uart2_sendStr("AT+MQTTCLEAN=0\r\n");
+        // uart2_clearBuf();
 
-    // 订阅主题
-    while (1) {
-        uart2_sendStr("AT+MQTTSUB=0,\"led\/client\",0\r\n"); 
-        uart2_sendStr("AT+MQTTSUB=0,\"led\/controller\",0\r\n"); 
-        uart2_sendStr("AT+MQTTSUB=0,\"led\/data\",0\r\n"); 
+        // 设置MQTT账号
+        uart2_sendStr(mqtt_user);
         delay_ms(600);
+        uart2_clearBuf();
+
+        // MQTT服务器连接(第一次返回OK，多次连接错误)
+        uart2_sendStr(mqtt_connect);
+        delay_ms(1000);
+        uart2_clearBuf();
+
+        // 订阅主题（如果订阅主题成功，前面操作全部成功）
+        uart2_sendStr("AT+MQTTSUB=0,\"led\/mcpu\",0\r\n");
+        delay_ms(1000);
         if (strstr(RX_buffer, "OK") != NULL) {
-            uart1_sendStr("OK,The mqtt server is connected! \r\n");
             uart1_sendStr("OK,Topic subscription completed! \r\n");
             break;
         } else {
@@ -136,6 +136,7 @@ void esp8266_mqtt_init()
             uart1_sendStr("\r\n");
         }
         uart2_clearBuf();
+
     }
 
     // 单片机登录成功，发送信息到led/client
@@ -151,28 +152,37 @@ void esp8266_mqtt_sendStr(unsigned char *topic, unsigned char *payload)
     uart2_sendStr(topic);
     uart2_sendStr("\",\"");
     uart2_sendStr(payload);
-    uart2_sendStr("\",1,0\r\n");
+    uart2_sendStr("\",2,0\r\n");
 }
 
-void on_receive_handle()
+void esp8266_mqtt_public_remain(unsigned char *topic, unsigned char *payload)
 {
-    if (is_containStr("LEDK")) // 点亮板上了的led2
-    {
-        ES  = 0;
-        IE2 = 0x00;
-        P40 = 0;                         // 点亮led
-        uart2_clearBuf();
-        uart1_sendStr("led is open！\r\n");
-        ES  = 1;
-        IE2 = 0x01;
-    } else if (is_containStr("LEDG")) // 关闭板上了的led
-    {
-        ES  = 0;
-        IE2 = 0x00;
-        P40 = 1;                         // 熄灭led
-        uart2_clearBuf();
-        uart1_sendStr("led is close！\r\n");
-        ES  = 1;
-        IE2 = 0x01;
-    }
+    uart2_sendStr("AT+MQTTPUB=0,\"");
+    uart2_sendStr(topic);
+    uart2_sendStr("\",\"");
+    uart2_sendStr(payload);
+    uart2_sendStr("\",1,1\r\n");
 }
+
+// void on_receive_handle()
+// {
+//     if (is_containStr("LEDK")) // 点亮板上了的led2
+//     {
+//         ES  = 0;
+//         IE2 = 0x00;
+//         P40 = 0; // 点亮led
+//         uart2_clearBuf();
+//         uart1_sendStr("led is open！\r\n");
+//         ES  = 1;
+//         IE2 = 0x01;
+//     } else if (is_containStr("LEDG")) // 关闭板上了的led
+//     {
+//         ES  = 0;
+//         IE2 = 0x00;
+//         P40 = 1; // 熄灭led
+//         uart2_clearBuf();
+//         uart1_sendStr("led is close！\r\n");
+//         ES  = 1;
+//         IE2 = 0x01;
+//     }
+// }

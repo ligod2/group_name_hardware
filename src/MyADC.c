@@ -3,9 +3,9 @@
 void adc_init()
 {
     P1ASF     = 0x80; // 开启1.7路ADC功能
-    // ADC_RES   = 0;    // 清楚之前的结果
-    // ADC_CONTR = ADC_POWER | ADC_SPEEDLL;
-    // delay_ms(2); // ADC上电和延时
+    ADC_RES   = 0;    // 清楚之前的结果
+    ADC_CONTR = ADC_POWER | ADC_SPEEDLL;
+    delay_ms(2); // ADC上电和延时
 }
 
 unsigned char GetADCResult(unsigned char ch)
