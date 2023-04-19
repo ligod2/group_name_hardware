@@ -1,6 +1,7 @@
 #include "MyTime.h"
 
 static unsigned long countdown_time; // 定义时间倒计时
+bit is_listen = 0;
 
 // 定时器0的初始化
 void delay_init()
@@ -17,15 +18,17 @@ void delay_init()
     EA = 1;
     // 允许寄存器0中断
     ET0 = 1;
+    TR0            = 1; // 启动T0计时器
+
 }
 
 void delay_ms(unsigned long time)
 {
+    // TR0            = 1; // 启动T0计时器
     countdown_time = time;
-    TR0            = 1; // 启动T0计时器
     while (countdown_time > 0)
         ;
-    TR0 = 0; // 关闭T0计时器
+    // TR0 = 0; // 关闭T0计时器
 }
 
 void time0_interrupt() interrupt 1
@@ -33,4 +36,8 @@ void time0_interrupt() interrupt 1
     TL0 = TIMECOUNT_MS;
     TH0 = TIMECOUNT_MS >> 8;
     countdown_time--;
+
+    if(P51 == 0){
+        is_listen = ~is_listen;
+    }
 }

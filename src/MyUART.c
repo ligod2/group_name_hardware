@@ -1,11 +1,9 @@
 #include "MyUART.h"
 
-#define S2RI  0x01              //S2CON.0
-#define S2TI  0x02              //S2CON.1
+#define S2RI 0x01 // S2CON.0
+#define S2TI 0x02 // S2CON.1
 unsigned char xdata RX_buffer[BUF_LENTH];
 unsigned int RX_num = 0; // 接收计数变量
-
-
 
 void uart_init()
 {
@@ -29,9 +27,9 @@ void uart_init()
     S2CON = 0x50; // 8位数据，可变波特率
     AUXR |= 0x14; // 串口2使用独立波特率发生器  并且开启1T模式
 
-    ES = 1; // IE寄存器的ES位为1 串口1中断允许开启
+    ES  = 1;    // IE寄存器的ES位为1 串口1中断允许开启
     IE2 = 0x01; // 串口2中断打开
-    EA = 1; // IE寄存器的EA位为1 CPU总中断允许开启
+    EA  = 1;    // IE寄存器的EA位为1 CPU总中断允许开启
 }
 
 // 串口1发送串口数据(字节)
@@ -81,14 +79,18 @@ void uart2_sendStr(unsigned char *str)
     IE2 = 0x01;
 }
 
-void uart2_clearBuf(){
+void uart2_clearBuf()
+{
+    ES  = 0;
+    IE2 = 0x00;
     memset(RX_buffer, '\0', BUF_LENTH); // 清缓存数据
-    RX_num = 0;                      // 接收计数变量清0
+    RX_num = 0;                         // 接收计数变量清0
+    ES     = 1;
+    IE2    = 0x01;
 }
 
 /////////////////////////////////
 /////////////////////////////////
-
 
 // 串口1中断
 void Uart1() interrupt 4
@@ -122,4 +124,3 @@ void Uart2() interrupt 8
     }
     IE2 = 0x01; // 开启串口2中断
 }
-

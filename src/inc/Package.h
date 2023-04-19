@@ -39,4 +39,5 @@
 extern unsigned char xdata RX_buffer[BUF_LENTH];
 extern unsigned char xdata format_buffer[FROMAT_BUF_LENTH];
 extern unsigned int RX_num; // 接收计数变量
+extern bit is_listen;
 #endif
